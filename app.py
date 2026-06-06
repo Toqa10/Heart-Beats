@@ -11,14 +11,15 @@ warnings.filterwarnings('ignore')
 # Load the model
 model = tf.keras.models.load_model("CNN_model.h5")
 
-# Professional clinical database
+# Clinical database with LIGHT colors
 class_labels = {
     0: {
         "name": "Normal Sinus Rhythm",
         "code": "N",
         "icd10": "I49.9",
-        "color": "#2C5F2D",
+        "color": "#2E7D32",
         "bg_color": "#E8F5E9",
+        "light_bg": "#F1F8E9",
         "severity": "Low",
         "risk_score": 8,
         "desc": "Normal sinus rhythm. Regular cardiac conduction pattern.",
@@ -33,8 +34,9 @@ class_labels = {
         "name": "Supraventricular Ectopy",
         "code": "S",
         "icd10": "I47.1",
-        "color": "#D35400",
-        "bg_color": "#FEF5E7",
+        "color": "#E65100",
+        "bg_color": "#FFF3E0",
+        "light_bg": "#FFF8E1",
         "severity": "Moderate",
         "risk_score": 42,
         "desc": "Supraventricular premature beats. May indicate atrial irritability.",
@@ -49,8 +51,9 @@ class_labels = {
         "name": "Ventricular Ectopy",
         "code": "V",
         "icd10": "I49.3",
-        "color": "#C0392B",
-        "bg_color": "#FDEDEC",
+        "color": "#C62828",
+        "bg_color": "#FFEBEE",
+        "light_bg": "#FDEDEC",
         "severity": "High",
         "risk_score": 78,
         "desc": "Ventricular premature complexes. Requires further evaluation.",
@@ -65,8 +68,9 @@ class_labels = {
         "name": "Fusion Beat",
         "code": "F",
         "icd10": "I49.8",
-        "color": "#7D3C98",
-        "bg_color": "#F4ECF7",
+        "color": "#6A1B9A",
+        "bg_color": "#F3E5F5",
+        "light_bg": "#F9F2FC",
         "severity": "Moderate-High",
         "risk_score": 65,
         "desc": "Fusion complexes. Mixed conduction pattern.",
@@ -81,8 +85,9 @@ class_labels = {
         "name": "Unclassified Pattern",
         "code": "Q",
         "icd10": "R94.31",
-        "color": "#5D6D7E",
-        "bg_color": "#EBF5FB",
+        "color": "#546E7A",
+        "bg_color": "#ECEFF1",
+        "light_bg": "#F5F5F5",
         "severity": "Indeterminate",
         "risk_score": 35,
         "desc": "Atypical pattern. Technical or biological artifact suspected.",
@@ -103,215 +108,227 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Professional Healthcare CSS
+# Professional Light Healthcare CSS
 st.markdown("""
 <style>
-    /* Professional Healthcare Theme */
+    /* Professional Light Healthcare Theme */
     :root {
-        --primary: #1B4F72;
-        --secondary: #2C3E50;
-        --accent: #2980B9;
-        --success: #27AE60;
-        --warning: #E67E22;
-        --danger: #E74C3C;
-        --light-bg: #F8F9FA;
+        --primary-light: #EBF5FB;
+        --primary: #5DADE2;
+        --primary-dark: #3498DB;
+        --secondary: #85C1E9;
+        --accent: #76D7C4;
+        --success: #A9DFBF;
+        --warning: #F9E79F;
+        --danger: #F5B7B1;
+        --bg-main: #F8F9FA;
+        --bg-card: #FFFFFF;
         --border: #E5E8E8;
         --text-primary: #2C3E50;
         --text-secondary: #5D6D7E;
+        --text-light: #95A5A6;
     }
     
     .stApp {
-        background-color: #F4F6F7;
+        background-color: #F0F4F8;
     }
     
-    /* Professional Header */
-    .professional-header {
-        background: linear-gradient(135deg, #1B4F72 0%, #1A5276 100%);
+    /* Light Header */
+    .light-header {
+        background: linear-gradient(135deg, #FFFFFF 0%, #E8F4FD 100%);
         padding: 1.5rem 2rem;
-        border-radius: 8px;
+        border-radius: 12px;
         margin-bottom: 2rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-bottom: 3px solid #3498DB;
+        border: 1px solid #D6EAF8;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
     
     .header-title {
         font-size: 1.75rem;
         font-weight: 600;
-        color: white;
+        color: #2C3E50;
         margin: 0;
-        letter-spacing: -0.5px;
+        letter-spacing: -0.3px;
     }
     
     .header-subtitle {
-        color: rgba(255,255,255,0.8);
+        color: #5D6D7E;
         font-size: 0.85rem;
         margin-top: 0.5rem;
     }
     
-    /* Professional Card */
-    .professional-card {
+    /* Light Card */
+    .light-card {
         background: white;
-        border-radius: 6px;
+        border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1rem;
-        border: 1px solid #E5E8E8;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        transition: box-shadow 0.2s ease;
+        border: 1px solid #E8ECEF;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: all 0.2s ease;
     }
     
-    .professional-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    .light-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border-color: #D6EAF8;
     }
     
-    /* Metric Card */
-    .metric-card {
+    /* Metric Card Light */
+    .metric-card-light {
         background: white;
-        border-radius: 6px;
-        padding: 1rem;
+        border-radius: 12px;
+        padding: 1.2rem;
         text-align: center;
-        border: 1px solid #E5E8E8;
-        border-top: 3px solid;
+        border: 1px solid #E8ECEF;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: all 0.2s ease;
     }
     
-    .metric-label {
+    .metric-card-light:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+    }
+    
+    .metric-label-light {
         font-size: 0.75rem;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.8px;
         font-weight: 600;
-        color: #5D6D7E;
-        margin-bottom: 0.5rem;
+        color: #7F8C8D;
+        margin-bottom: 0.75rem;
     }
     
-    .metric-value {
-        font-size: 1.75rem;
+    .metric-value-light {
+        font-size: 2rem;
         font-weight: 700;
-        color: #1B4F72;
+        color: #2C3E50;
         margin: 0.25rem 0;
     }
     
-    .metric-unit {
+    .metric-unit-light {
         font-size: 0.7rem;
-        color: #7F8C8D;
+        color: #95A5A6;
     }
     
-    /* Diagnosis Card */
-    .diagnostic-card {
+    /* Diagnosis Card Light */
+    .diagnostic-card-light {
         background: white;
-        border-radius: 6px;
+        border-radius: 12px;
         padding: 1.25rem;
         border-left: 4px solid;
         margin: 1rem 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }
     
-    .diagnostic-title {
-        font-size: 1.25rem;
+    .diagnostic-title-light {
+        font-size: 1.3rem;
         font-weight: 600;
         margin-bottom: 0.25rem;
+        color: #2C3E50;
     }
     
-    .diagnostic-code {
+    .diagnostic-code-light {
         font-family: monospace;
         font-size: 0.85rem;
-        color: #5D6D7E;
+        color: #7F8C8D;
     }
     
-    /* Risk Indicator */
-    .risk-indicator {
+    /* Risk Indicator Light */
+    .risk-indicator-light {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 4px;
+        padding: 0.25rem 0.85rem;
+        border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
-    .risk-Low { background: #E8F5E9; color: #2E7D32; }
-    .risk-Moderate { background: #FFF3E0; color: #E65100; }
-    .risk-High { background: #FFEBEE; color: #C62828; }
-    .risk-Moderate-High { background: #FBE9E7; color: #BF360C; }
-    .risk-Indeterminate { background: #E3F2FD; color: #1565C0; }
+    .risk-Low { background: #E8F8F5; color: #1ABC9C; border: 1px solid #A3E4D7; }
+    .risk-Moderate { background: #FEF9E7; color: #F39C12; border: 1px solid #F9E79F; }
+    .risk-High { background: #FDEDEC; color: #E74C3C; border: 1px solid #F5B7B1; }
+    .risk-Moderate-High { background: #FEF5E7; color: #E67E22; border: 1px solid #FAD7A0; }
+    .risk-Indeterminate { background: #EBF5FB; color: #3498DB; border: 1px solid #AED6F1; }
     
-    /* Button Professional */
+    /* Button Light */
     .stButton > button {
-        background: #1B4F72;
+        background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
         color: white;
         border: none;
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        padding: 0.6rem 1.2rem;
         font-size: 0.85rem;
         font-weight: 500;
         transition: all 0.2s ease;
         width: 100%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     
     .stButton > button:hover {
-        background: #1A5276;
         transform: translateY(-1px);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 12px rgba(52,152,219,0.3);
+        background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
     }
     
-    /* Alert Box */
-    .alert-box {
+    /* Alert Box Light */
+    .alert-box-light {
         background: #FDEDEC;
         border-left: 4px solid #E74C3C;
         padding: 0.75rem 1rem;
-        border-radius: 4px;
+        border-radius: 8px;
         margin: 0.5rem 0;
         font-size: 0.85rem;
+        color: #2C3E50;
     }
     
-    /* Tab Styling */
+    /* Tab Styling Light */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
         background: white;
         padding: 0.5rem;
-        border-radius: 6px;
-        border: 1px solid #E5E8E8;
+        border-radius: 10px;
+        border: 1px solid #E8ECEF;
     }
     
     .stTabs [data-baseweb="tab"] {
-        border-radius: 4px;
-        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
         font-size: 0.85rem;
         font-weight: 500;
+        color: #5D6D7E;
     }
     
     .stTabs [aria-selected="true"] {
-        background: #1B4F72;
+        background: linear-gradient(135deg, #5DADE2 0%, #3498DB 100%);
         color: white;
     }
     
-    /* Expander */
+    /* Expander Light */
     .streamlit-expanderHeader {
-        background: white;
-        border-radius: 6px;
+        background: #F8F9FA;
+        border-radius: 8px;
         font-size: 0.85rem;
         font-weight: 500;
-        border: 1px solid #E5E8E8;
+        border: 1px solid #E8ECEF;
+        color: #2C3E50;
     }
     
-    /* Sidebar */
-    .css-1d391kg {
-        background: white;
-        border-right: 1px solid #E5E8E8;
-    }
-    
-    /* Progress Bar */
+    /* Progress Bar Light */
     .stProgress > div > div {
-        background: #1B4F72;
+        background: linear-gradient(90deg, #76D7C4, #5DADE2);
+        border-radius: 10px;
     }
     
-    /* Footer */
-    .professional-footer {
+    /* Footer Light */
+    .light-footer {
         background: white;
-        padding: 1rem;
-        border-radius: 6px;
+        padding: 1.2rem;
+        border-radius: 12px;
         margin-top: 2rem;
         text-align: center;
-        border: 1px solid #E5E8E8;
+        border: 1px solid #E8ECEF;
         font-size: 0.75rem;
-        color: #5D6D7E;
+        color: #7F8C8D;
     }
     
     /* Divider */
@@ -319,41 +336,60 @@ st.markdown("""
         margin: 1rem 0;
         border: none;
         height: 1px;
-        background: #E5E8E8;
+        background: linear-gradient(90deg, transparent, #D6EAF8, transparent);
     }
     
-    /* ECG Chart Container */
-    .ecg-container {
+    /* ECG Container */
+    .ecg-container-light {
         background: white;
         padding: 1rem;
-        border-radius: 6px;
-        border: 1px solid #E5E8E8;
+        border-radius: 12px;
+        border: 1px solid #E8ECEF;
         margin: 1rem 0;
     }
     
-    /* Info Box */
-    .info-box {
-        background: #E8F0FE;
+    /* Info Box Light */
+    .info-box-light {
+        background: #EBF5FB;
         padding: 0.75rem 1rem;
-        border-radius: 4px;
-        border-left: 3px solid #3498DB;
+        border-radius: 8px;
+        border-left: 3px solid #5DADE2;
         font-size: 0.85rem;
-    }
-    
-    /* Table Style */
-    .dataframe {
-        font-size: 0.8rem;
-    }
-    
-    /* Badge */
-    .badge {
-        display: inline-block;
-        padding: 0.2rem 0.5rem;
-        border-radius: 3px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        background: #F0F3F4;
         color: #2C3E50;
+    }
+    
+    /* Badge Light */
+    .badge-light {
+        display: inline-block;
+        padding: 0.2rem 0.6rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 500;
+        background: #F0F3F4;
+        color: #5D6D7E;
+        border: 1px solid #E8ECEF;
+    }
+    
+    /* Sidebar Light */
+    .css-1d391kg {
+        background: white;
+        border-right: 1px solid #E8ECEF;
+    }
+    
+    /* Status Indicators */
+    .status-good {
+        color: #27AE60;
+        font-weight: 500;
+    }
+    
+    .status-warning {
+        color: #E67E22;
+        font-weight: 500;
+    }
+    
+    .status-critical {
+        color: #E74C3C;
+        font-weight: 500;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -386,15 +422,15 @@ def calculate_snr(signal):
 
 # Header
 st.markdown("""
-<div class="professional-header">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
+<div class="light-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
         <div>
             <h1 class="header-title">⚕️ ECG Clinical Decision Support</h1>
-            <p class="header-subtitle">AI-Powered Cardiac Analysis System | Version 3.0 | CLIA Certified</p>
+            <p class="header-subtitle">AI-Powered Cardiac Analysis System | Light Edition</p>
         </div>
-        <div style="text-align: right;">
-            <span class="badge">HIPAA Compliant</span>
-            <span class="badge">FDA Class II</span>
+        <div style="display: flex; gap: 0.5rem;">
+            <span class="badge-light">✓ HIPAA Compliant</span>
+            <span class="badge-light">✓ CLIA Certified</span>
         </div>
     </div>
 </div>
@@ -430,7 +466,7 @@ with st.sidebar:
         medications = st.text_area("Current Medications", placeholder="List with doses")
     
     st.markdown("---")
-    st.caption("🏥 Enterprise Edition v3.0")
+    st.caption("✨ Light Edition v3.0")
     st.caption("© 2024 Clinical Decision Support")
 
 # Main Input Section
@@ -450,35 +486,36 @@ if input_method == "CSV Upload":
         values = df.values.flatten()
         if len(values) == 187:
             ecg_values = values
-            st.success(f"✓ Loaded {len(values)} samples")
-            with st.expander("Preview"):
-                st.text(f"Range: [{values.min():.3f}, {values.max():.3f}] | Mean: {values.mean():.3f}")
+            st.success(f"✓ Loaded {len(values)} samples successfully")
+            with st.expander("Preview Data"):
+                st.text(f"Range: [{values.min():.3f}, {values.max():.3f}] | Mean: {values.mean():.3f} | Std: {values.std():.3f}")
         else:
             st.error(f"Invalid: {len(values)} samples (requires 187)")
 
 elif input_method == "Manual Entry":
-    manual = st.text_area("Enter 187 values (comma-separated)", height=80)
-    if manual and st.button("Process"):
+    manual = st.text_area("Enter 187 values (comma-separated)", height=80,
+                         placeholder="0.5, 0.7, 0.3, -0.2, ...")
+    if manual and st.button("Process", use_container_width=True):
         try:
             vals = [float(x.strip()) for x in manual.replace('\n',',').split(',') if x.strip()]
             if len(vals) == 187:
                 ecg_values = np.array(vals)
-                st.success("✓ Data accepted")
+                st.success("✓ Data accepted successfully")
             else:
                 st.error(f"Expected 187, received {len(vals)}")
         except:
-            st.error("Invalid format")
+            st.error("Invalid format - please check your input")
 
 else:  # Test Pattern
     col_p1, col_p2 = st.columns(2)
     with col_p1:
-        pattern = st.selectbox("Pattern", ["Normal", "PVC", "Bradycardia", "Tachycardia"])
+        pattern = st.selectbox("Pattern Type", ["Normal Sinus", "PVC", "Bradycardia", "Tachycardia"])
     with col_p2:
-        noise = st.slider("Noise", 0.0, 0.2, 0.05, format="%.2f")
+        noise = st.slider("Noise Level", 0.0, 0.2, 0.05, format="%.2f")
     
-    if st.button("Generate"):
+    if st.button("Generate Pattern", use_container_width=True):
         t = np.linspace(0, 8*np.pi, 187)
-        if pattern == "Normal":
+        if pattern == "Normal Sinus":
             ecg_values = np.sin(t) * 0.8 + np.sin(3*t) * 0.2
         elif pattern == "PVC":
             ecg_values = np.sin(t) * 0.8
@@ -490,26 +527,27 @@ else:  # Test Pattern
         
         ecg_values += np.random.normal(0, noise, 187)
         ecg_values = ecg_values / np.max(np.abs(ecg_values))
-        st.success(f"✓ Generated {pattern} pattern")
+        st.success(f"✓ Generated {pattern} pattern successfully")
 
 with col_in2:
-    st.markdown("### Specifications")
+    st.markdown("### 📋 Requirements")
     st.info("""
-    **Input Requirements**
-    - 187 samples/beat
-    - Normalized range
+    **Input Specifications**
+    - 187 samples per beat
+    - Normalized range [-1, 1]
     - CSV or direct entry
     
-    **Analysis**
+    **Analysis Features**
     - CNN classification
-    - Risk stratification
+    - Risk stratification  
     - Clinical guidance
+    - Export capabilities
     """)
 
 # Analysis
 if ecg_values is not None:
-    if st.button("Run Analysis", type="primary", use_container_width=True):
-        with st.spinner("Processing..."):
+    if st.button("🔬 Run Clinical Analysis", type="primary", use_container_width=True):
+        with st.spinner("Processing ECG signal..."):
             # Prediction
             reshaped = ecg_values.reshape(1, 187, 1).astype(np.float32)
             pred = model.predict(reshaped)
@@ -524,27 +562,32 @@ if ecg_values is not None:
             clinical = class_labels[class_idx]
             risk = clinical['risk_score']
             
-            # Adjust risk
+            # Adjust risk based on patient factors
             if age > 65:
                 risk += 15
+            if age > 80:
+                risk += 10
             if "Hypertension" in comorbidities:
                 risk += 10
             if "CAD" in comorbidities:
                 risk += 20
             risk = min(100, risk)
             
-            # Urgency
+            # Determine urgency
             if risk >= 70:
                 urgency = "EMERGENCY"
                 setting = "Emergency Department / Immediate Cardiology"
+                bg_color = "#FDEDEC"
             elif risk >= 50:
                 urgency = "URGENT"
                 setting = "Cardiology Clinic within 48 hours"
+                bg_color = "#FEF9E7"
             else:
                 urgency = "ROUTINE"
                 setting = "Outpatient follow-up"
+                bg_color = "#E8F8F5"
             
-            # Result
+            # Store result
             result = {
                 "timestamp": datetime.now().isoformat(),
                 "patient": {"name": patient_name, "mrn": patient_id, "age": age},
@@ -565,14 +608,16 @@ if ecg_values is not None:
                     "urgency": urgency,
                     "setting": setting,
                     "specialist": clinical['specialist'],
-                    "follow_up": clinical['follow_up']
+                    "follow_up": clinical['follow_up'],
+                    "clinical_advice": clinical['clinical_advice']
                 },
                 "signal": ecg_values.tolist()
             }
             
             st.session_state.current_patient = result
             st.session_state.clinical_history.append(result)
-            st.success("Analysis complete")
+            st.success("✓ Analysis complete successfully!")
+            st.balloons()
             st.rerun()
 
 # Display Results
@@ -589,54 +634,58 @@ if st.session_state.current_patient:
     
     with col1:
         st.markdown(f"""
-        <div class="metric-card" style="border-top-color: #1B4F72;">
-            <div class="metric-label">RISK SCORE</div>
-            <div class="metric-value">{r['risk']['score']}</div>
-            <div class="metric-unit">/100</div>
-            <div><span class="risk-indicator risk-{r['risk']['level']}">{r['risk']['level']} RISK</span></div>
+        <div class="metric-card-light">
+            <div class="metric-label-light">RISK SCORE</div>
+            <div class="metric-value-light">{r['risk']['score']}</div>
+            <div class="metric-unit-light">/100</div>
+            <div style="margin-top: 8px;">
+                <span class="risk-indicator-light risk-{r['risk']['level']}">{r['risk']['level']} RISK</span>
+            </div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
+        hr_status = "🟢" if 60 <= r['metrics']['heart_rate'] <= 100 else "🟡" if 50 <= r['metrics']['heart_rate'] <= 110 else "🔴"
         st.markdown(f"""
-        <div class="metric-card" style="border-top-color: #2980B9;">
-            <div class="metric-label">HEART RATE</div>
-            <div class="metric-value">{r['metrics']['heart_rate']:.0f}</div>
-            <div class="metric-unit">beats per minute</div>
+        <div class="metric-card-light">
+            <div class="metric-label-light">HEART RATE</div>
+            <div class="metric-value-light">{hr_status} {r['metrics']['heart_rate']:.0f}</div>
+            <div class="metric-unit-light">beats per minute</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
+        conf_color = "🟢" if r['metrics']['confidence'] > 80 else "🟡" if r['metrics']['confidence'] > 60 else "🔴"
         st.markdown(f"""
-        <div class="metric-card" style="border-top-color: #27AE60;">
-            <div class="metric-label">CONFIDENCE</div>
-            <div class="metric-value">{r['metrics']['confidence']:.0f}%</div>
-            <div class="metric-unit">AI certainty</div>
+        <div class="metric-card-light">
+            <div class="metric-label-light">CONFIDENCE</div>
+            <div class="metric-value-light">{conf_color} {r['metrics']['confidence']:.0f}%</div>
+            <div class="metric-unit-light">AI certainty</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
-        quality = "GOOD" if r['metrics']['snr'] > 10 else "FAIR" if r['metrics']['snr'] > 5 else "POOR"
-        color = "#27AE60" if r['metrics']['snr'] > 10 else "#E67E22" if r['metrics']['snr'] > 5 else "#E74C3C"
+        quality_color = "🟢" if r['metrics']['snr'] > 10 else "🟡" if r['metrics']['snr'] > 5 else "🔴"
+        quality_text = "Good" if r['metrics']['snr'] > 10 else "Fair" if r['metrics']['snr'] > 5 else "Poor"
         st.markdown(f"""
-        <div class="metric-card" style="border-top-color: {color};">
-            <div class="metric-label">SIGNAL QUALITY</div>
-            <div class="metric-value">{r['metrics']['snr']:.1f}</div>
-            <div class="metric-unit">dB SNR ({quality})</div>
+        <div class="metric-card-light">
+            <div class="metric-label-light">SIGNAL QUALITY</div>
+            <div class="metric-value-light">{quality_color} {r['metrics']['snr']:.1f}</div>
+            <div class="metric-unit-light">dB SNR ({quality_text})</div>
         </div>
         """, unsafe_allow_html=True)
     
     # Diagnosis Card
     st.markdown(f"""
-    <div class="diagnostic-card" style="border-left-color: {clinical['color']};">
-        <div style="display: flex; justify-content: space-between; align-items: start;">
+    <div class="diagnostic-card-light" style="border-left-color: {clinical['color']}; background: {clinical['light_bg']}">
+        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap;">
             <div>
-                <div class="diagnostic-title">{clinical['name']} ({clinical['code']})</div>
-                <div class="diagnostic-code">ICD-10: {clinical['icd10']}</div>
-                <p style="margin-top: 0.75rem; font-size: 0.9rem;">{clinical['desc']}</p>
+                <div class="diagnostic-title-light">{clinical['name']} ({clinical['code']})</div>
+                <div class="diagnostic-code-light">ICD-10: {clinical['icd10']}</div>
+                <p style="margin-top: 0.75rem; font-size: 0.9rem; color: #34495E;">{clinical['desc']}</p>
             </div>
             <div>
-                <span class="risk-indicator risk-{r['risk']['level']}">{r['risk']['level']}</span>
+                <span class="risk-indicator-light risk-{r['risk']['level']}">{r['risk']['level']}</span>
             </div>
         </div>
     </div>
@@ -646,95 +695,130 @@ if st.session_state.current_patient:
     col_rec1, col_rec2 = st.columns(2)
     
     with col_rec1:
-        st.markdown("### Immediate Actions")
+        st.markdown("### 🚨 Immediate Actions")
         st.markdown(f"""
-        <div class="professional-card">
-            <strong>🚨 Urgency:</strong> {r['recommendations']['urgency']}<br>
-            <strong>📍 Setting:</strong> {r['recommendations']['setting']}<br>
-            <strong>👨‍⚕️ Specialist:</strong> {r['recommendations']['specialist']}<br>
-            <strong>📅 Follow-up:</strong> {r['recommendations']['follow_up']}
+        <div class="light-card">
+            <p><strong>Urgency Level:</strong> <span class="risk-indicator-light risk-{r['risk']['level']}">{r['recommendations']['urgency']}</span></p>
+            <p><strong>Care Setting:</strong> {r['recommendations']['setting']}</p>
+            <p><strong>Specialist Referral:</strong> {r['recommendations']['specialist']}</p>
+            <p><strong>Follow-up Timeline:</strong> {r['recommendations']['follow_up']}</p>
         </div>
         """, unsafe_allow_html=True)
     
     with col_rec2:
-        st.markdown("### Treatment Plan")
+        st.markdown("### 💊 Treatment Plan")
         st.markdown(f"""
-        <div class="professional-card">
-            <strong>Clinical Advice:</strong><br>
-            {clinical['clinical_advice']}
+        <div class="light-card">
+            <p><strong>Clinical Advice:</strong></p>
+            <p style="color: #34495E;">{r['recommendations']['clinical_advice']}</p>
+            <hr>
+            <p><strong>Medications:</strong></p>
+            <p>{', '.join(clinical['medications']) if clinical['medications'] else 'None indicated'}</p>
         </div>
         """, unsafe_allow_html=True)
     
     # ECG Visualization
-    st.markdown("### ECG Waveform")
+    st.markdown("### 📈 ECG Waveform")
     
     chart_data = pd.DataFrame({
-        'Time (ms)': range(len(r['signal'])),
+        'Sample': range(len(r['signal'])),
         'Amplitude (mV)': r['signal']
     })
     
-    st.line_chart(chart_data.set_index('Time (ms)'), height=300, color=clinical['color'])
+    st.line_chart(chart_data.set_index('Sample'), height=300, color=clinical['color'])
     
-    # Signal Stats
-    col_s1, col_s2, col_s3 = st.columns(3)
-    with col_s1:
-        st.caption(f"**Peak Amplitude:** {np.max(r['signal']):.3f} mV")
-    with col_s2:
-        st.caption(f"**Trough:** {np.min(r['signal']):.3f} mV")
-    with col_s3:
-        st.caption(f"**Detected Peaks:** {r['metrics']['peaks']}")
+    # Signal Statistics
+    col_stats1, col_stats2, col_stats3, col_stats4 = st.columns(4)
+    with col_stats1:
+        st.metric("Peak Amplitude", f"{np.max(r['signal']):.3f} mV")
+    with col_stats2:
+        st.metric("Trough", f"{np.min(r['signal']):.3f} mV")
+    with col_stats3:
+        st.metric("Mean", f"{np.mean(r['signal']):.3f} mV")
+    with col_stats4:
+        st.metric("Detected Peaks", f"{r['metrics']['peaks']}")
     
-    # Export
-    st.markdown("### Export")
-    col_e1, col_e2 = st.columns(2)
+    # Export Section
+    st.markdown("### 📎 Export Results")
+    col_export1, col_export2, col_export3 = st.columns(3)
     
-    with col_e1:
+    with col_export1:
         report = f"""
 CLINICAL ECG REPORT
 ===================
+Generated: {r['timestamp'][:19]}
 MRN: {r['patient']['mrn']}
-Patient: {r['patient']['name']}
+Patient: {r['patient']['name'] or 'Not specified'}
 Age: {r['patient']['age']}
-Date: {r['timestamp'][:19]}
 
-DIAGNOSIS: {clinical['name']} ({clinical['code']})
+DIAGNOSIS
+---------
+{clinical['name']} ({clinical['code']})
 ICD-10: {clinical['icd10']}
 Risk Level: {r['risk']['level']} (Score: {r['risk']['score']}/100)
 
 VITALS
-- Heart Rate: {r['metrics']['heart_rate']:.0f} BPM
-- Signal Quality: {r['metrics']['snr']:.1f} dB
-- AI Confidence: {r['metrics']['confidence']:.0f}%
+------
+Heart Rate: {r['metrics']['heart_rate']:.0f} BPM
+Signal Quality: {r['metrics']['snr']:.1f} dB
+AI Confidence: {r['metrics']['confidence']:.0f}%
 
 RECOMMENDATIONS
-- Urgency: {r['recommendations']['urgency']}
-- Setting: {r['recommendations']['setting']}
-- Specialist: {r['recommendations']['specialist']}
-- Follow-up: {r['recommendations']['follow_up']}
+--------------
+Urgency: {r['recommendations']['urgency']}
+Setting: {r['recommendations']['setting']}
+Specialist: {r['recommendations']['specialist']}
+Follow-up: {r['recommendations']['follow_up']}
 
 CLINICAL ADVICE
-{clinical['clinical_advice']}
+--------------
+{r['recommendations']['clinical_advice']}
 
-DISCLAIMER: AI-assisted analysis. Final clinical decisions require physician review.
+DISCLAIMER
+----------
+This is an AI-assisted analysis. All clinical decisions must be verified by a qualified physician.
         """
-        st.download_button("📄 Download Report", report, f"ECG_{r['patient']['mrn']}.txt")
+        st.download_button("📄 Download Report", report, f"ECG_Report_{r['patient']['mrn']}.txt")
     
-    with col_e2:
-        if st.button("🔄 New Patient"):
+    with col_export2:
+        json_report = json.dumps(r, indent=2, default=str)
+        st.download_button("💾 Export JSON", json_report, f"ECG_Data_{r['patient']['mrn']}.json")
+    
+    with col_export3:
+        if st.button("🔄 New Consultation"):
             st.session_state.current_patient = {}
             st.rerun()
 
+# History Section
+if len(st.session_state.clinical_history) > 1:
+    with st.expander("📜 Recent Consultations", expanded=False):
+        for consult in reversed(st.session_state.clinical_history[-3:]):
+            diag = class_labels[consult['diagnosis']['index']]
+            st.markdown(f"""
+            <div class="light-card" style="padding: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>{consult['timestamp'][:10]}</strong> - {diag['name']}
+                    </div>
+                    <div>
+                        <span class="risk-indicator-light risk-{consult['risk']['level']}">{consult['risk']['level']}</span>
+                        <span style="margin-left: 0.5rem; font-size: 0.8rem;">HR: {consult['metrics']['heart_rate']:.0f}</span>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
 # Footer
 st.markdown("""
-<div class="professional-footer">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <div>ECG Clinical Decision Support v3.0</div>
-        <div>CLIA Certified • FDA Class II • HIPAA Compliant</div>
-        <div>For clinical use by authorized personnel only</div>
+<div class="light-footer">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div><strong>⚕️ ECG Clinical Decision Support</strong> v3.0 Light Edition</div>
+        <div>✓ CLIA Certified • ✓ FDA Class II • ✓ HIPAA Compliant</div>
     </div>
     <hr>
     <div style="font-size: 0.7rem;">
-        ⚠️ This is an AI-assisted decision support tool. All diagnoses and treatment decisions must be verified by a qualified physician.
+        ⚠️ <strong>Clinical Decision Support Tool</strong> - This AI-assisted analysis does not replace physician judgment.
+        All medical decisions require licensed healthcare provider review.
     </div>
 </div>
 """, unsafe_allow_html=True)
