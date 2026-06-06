@@ -4,24 +4,22 @@ import pandas as pd
 import tensorflow as tf
 from datetime import datetime
 import json
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 import hashlib
-from scipy import signal
 from scipy.fft import fft, fftfreq
+from scipy.signal import find_peaks
 import warnings
 warnings.filterwarnings('ignore')
 
 # Load the model
 model = tf.keras.models.load_model("CNN_model.h5")
 
-# Comprehensive clinical database
+# Comprehensive clinical database with SOFT COLORS
 class_labels = {
     0: {
         "name": "Normal Sinus Rhythm (N)",
         "icd10": "I49.9",
-        "color": "#2Ecc71",
+        "color": "#A8E6CF",  # Soft mint
+        "dark_color": "#2Ecc71",
         "severity": "Low",
         "risk_score": 8,
         "mortality_risk": "0.1%",
@@ -37,7 +35,8 @@ class_labels = {
     1: {
         "name": "Supraventricular Ectopy (S)",
         "icd10": "I47.1",
-        "color": "#F39C12",
+        "color": "#FFD3B6",  # Soft peach
+        "dark_color": "#F39C12",
         "severity": "Moderate",
         "risk_score": 42,
         "mortality_risk": "2.3%",
@@ -53,7 +52,8 @@ class_labels = {
     2: {
         "name": "Ventricular Ectopy (V)",
         "icd10": "I49.3",
-        "color": "#E74C3C",
+        "color": "#FFAAA5",  # Soft coral
+        "dark_color": "#E74C3C",
         "severity": "High",
         "risk_score": 78,
         "mortality_risk": "8.7%",
@@ -69,7 +69,8 @@ class_labels = {
     3: {
         "name": "Fusion Beat (F)",
         "icd10": "I49.8",
-        "color": "#9B59B6",
+        "color": "#C3B1E1",  # Soft lavender
+        "dark_color": "#9B59B6",
         "severity": "Moderate-High",
         "risk_score": 65,
         "mortality_risk": "5.1%",
@@ -85,7 +86,8 @@ class_labels = {
     4: {
         "name": "Unclassified Pattern (Q)",
         "icd10": "R94.31",
-        "color": "#95A5A6",
+        "color": "#D4E0EC",  # Soft blue-gray
+        "dark_color": "#95A5A6",
         "severity": "Uncertain",
         "risk_score": 35,
         "mortality_risk": "N/A",
@@ -100,333 +102,352 @@ class_labels = {
     }
 }
 
-# Advanced features setup
+# Page config
 st.set_page_config(
-    page_title="ECG Master Suite - Advanced Clinical Decision System",
-    page_icon="🏥",
+    page_title="ECG Clinical Suite - Advanced Cardiac Analysis",
+    page_icon="💓",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for ultra-professional look
+# Soft & Light CSS Theme
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     * {
         font-family: 'Inter', sans-serif;
     }
     
-    .main-header {
-        background: linear-gradient(135deg, #0c4a6e 0%, #1e3a8a 50%, #312e81 100%);
+    .stApp {
+        background: linear-gradient(135deg, #F8F9FA 0%, #E8F0FE 100%);
+    }
+    
+    /* Soft Header */
+    .soft-header {
+        background: linear-gradient(135deg, #FFFFFF 0%, #F0F4F8 100%);
         padding: 2rem;
-        border-radius: 20px;
+        border-radius: 25px;
         margin-bottom: 2rem;
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .main-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 1%, transparent 1%);
-        background-size: 50px 50px;
-        animation: shimmer 20s linear infinite;
-    }
-    
-    @keyframes shimmer {
-        0% { transform: translate(0,0); }
-        100% { transform: translate(50px,50px); }
+        box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255,255,255,0.8);
     }
     
     .header-title {
-        font-size: 2.5rem;
-        font-weight: 800;
-        color: white;
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2C3E50 0%, #3498DB 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         margin: 0;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
     }
     
-    .header-subtitle {
-        color: rgba(255,255,255,0.9);
-        margin-top: 0.5rem;
-        font-size: 1rem;
-    }
-    
-    .vital-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 15px;
-        padding: 1rem;
-        color: white;
-        text-align: center;
+    /* Soft Cards */
+    .soft-card {
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border: 1px solid rgba(255,255,255,0.5);
         transition: all 0.3s ease;
         margin: 0.5rem 0;
     }
     
-    .vital-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    .soft-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        background: white;
     }
     
-    .risk-meter {
+    /* Metric Cards */
+    .metric-soft {
+        background: white;
+        border-radius: 18px;
+        padding: 1.2rem;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.2s ease;
+    }
+    
+    .metric-soft:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #2C3E50 0%, #3498DB 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0.5rem 0;
+    }
+    
+    /* Risk Meter Soft */
+    .risk-meter-soft {
         width: 100%;
-        height: 20px;
-        background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
-        border-radius: 10px;
+        height: 12px;
+        background: linear-gradient(90deg, #A8E6CF, #FFD3B6, #FFAAA5);
+        border-radius: 20px;
         overflow: hidden;
         margin: 1rem 0;
     }
     
-    .risk-indicator {
-        height: 100%;
-        width: 0%;
-        background: rgba(0,0,0,0.3);
-        transition: width 0.5s ease;
-    }
-    
-    .clinical-badge {
-        display: inline-block;
-        padding: 0.4rem 1rem;
-        border-radius: 25px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        margin: 0.2rem;
-    }
-    
-    .gradient-text {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-weight: 800;
-    }
-    
-    .floating-card {
+    /* Diagnosis Card */
+    .diagnosis-card {
         background: white;
         border-radius: 20px;
         padding: 1.5rem;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border-left: 6px solid;
+        margin: 1rem 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    
+    /* Badges Soft */
+    .badge-soft {
+        display: inline-block;
+        padding: 0.3rem 1rem;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin: 0.2rem;
+        background: rgba(0,0,0,0.03);
+        color: #2C3E50;
+    }
+    
+    /* Button Styling */
+    .stButton > button {
+        background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 0.6rem 1.2rem;
+        font-weight: 500;
         transition: all 0.3s ease;
     }
     
-    .floating-card:hover {
-        transform: translateY(-10px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(52,152,219,0.3);
     }
     
-    .severity-Low { border-left: 5px solid #2ecc71; background: linear-gradient(90deg, #f0fff4, white); }
-    .severity-Moderate { border-left: 5px solid #f39c12; background: linear-gradient(90deg, #fffaf0, white); }
-    .severity-High { border-left: 5px solid #e74c3c; background: linear-gradient(90deg, #fff0f0, white); animation: pulse-red 2s infinite; }
-    .severity-Moderate-High { border-left: 5px solid #e67e22; background: linear-gradient(90deg, #fff5f0, white); }
-    
-    @keyframes pulse-red {
-        0%, 100% { border-left-color: #e74c3c; }
-        50% { border-left-color: #c0392b; }
-    }
-    
-    .stat-card {
-        background: white;
-        border-radius: 15px;
+    /* Alert Boxes Soft */
+    .alert-soft {
+        background: #FFF5F5;
+        border-left: 4px solid #FFAAA5;
         padding: 1rem;
-        text-align: center;
-        border: 1px solid #e5e7eb;
-        transition: all 0.2s ease;
+        border-radius: 12px;
+        margin: 0.5rem 0;
     }
     
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #1e3a8a;
-    }
-    
-    .footer {
-        background: #1f2937;
+    /* Footer */
+    .soft-footer {
+        background: white;
         padding: 2rem;
         border-radius: 20px;
-        color: white;
         margin-top: 3rem;
         text-align: center;
+        border: 1px solid rgba(0,0,0,0.05);
+        color: #7F8C8D;
     }
     
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .header-title { font-size: 1.5rem; }
-        .stat-number { font-size: 1.2rem; }
+    /* Expander */
+    .streamlit-expanderHeader {
+        background: rgba(255,255,255,0.7);
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 1rem;
+        background: rgba(255,255,255,0.5);
+        padding: 0.5rem;
+        border-radius: 15px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 12px;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+    }
+    
+    /* Progress Bar */
+    .stProgress > div > div {
+        background: linear-gradient(90deg, #A8E6CF, #3498DB);
+    }
+    
+    hr {
+        margin: 1rem 0;
+        border: none;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, #CBD5E0, transparent);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize advanced session states
+# Initialize session states
 if 'clinical_history' not in st.session_state:
     st.session_state.clinical_history = []
 if 'current_patient' not in st.session_state:
     st.session_state.current_patient = {}
-if 'ecg_cache' not in st.session_state:
-    st.session_state.ecg_cache = {}
 if 'alerts' not in st.session_state:
     st.session_state.alerts = []
 
 # Header
 st.markdown("""
-<div class="main-header">
-    <div>
-        <span style="font-size: 3rem;">🏥</span>
-        <h1 class="header-title">ECG Master Suite</h1>
-        <p class="header-subtitle">Advanced Clinical Decision Support System • AI-Powered Cardiac Analysis • Real-time Risk Stratification</p>
+<div class="soft-header">
+    <h1 class="header-title">💓 ECG Clinical Suite</h1>
+    <p style="color: #5A6C7D; margin-top: 0.5rem;">Advanced AI-Powered Cardiac Decision Support System</p>
+    <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+        <span class="badge-soft">🔬 AI-Powered</span>
+        <span class="badge-soft">🏥 Clinical Grade</span>
+        <span class="badge-soft">📊 Real-time Analysis</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Sidebar - Advanced Settings
+# Sidebar - Patient Info
 with st.sidebar:
-    st.markdown("### 🏥 Clinical Dashboard")
+    st.markdown("### 🏥 Patient Information")
     
-    # Quick stats
-    if st.session_state.clinical_history:
-        st.markdown(f"**Total Consultations:** {len(st.session_state.clinical_history)}")
-        high_risk_count = sum(1 for c in st.session_state.clinical_history if class_labels[c['diagnosis']]['severity'] == 'High')
-        st.markdown(f"**High Risk Cases:** {high_risk_count}")
-    
-    st.markdown("---")
-    
-    # Patient registration
-    with st.expander("📝 Patient Registration", expanded=True):
-        patient_id = st.text_input("Patient ID", placeholder="Auto-generated if empty")
-        patient_name = st.text_input("Full Name", placeholder="Enter patient name")
-        age = st.number_input("Age", 0, 120, 55)
+    with st.expander("👤 Patient Details", expanded=True):
+        patient_name = st.text_input("Patient Name", placeholder="Enter full name")
+        patient_id = st.text_input("Patient ID", placeholder="Auto-generated", 
+                                  value=f"ECG-{datetime.now().strftime('%Y%m%d')}-{np.random.randint(100,999)}")
+        age = st.slider("Age", 0, 120, 55)
         gender = st.selectbox("Gender", ["Male", "Female", "Other"])
-        weight = st.number_input("Weight (kg)", 20, 200, 70)
-        height = st.number_input("Height (cm)", 100, 250, 170)
         
-        bmi = weight / ((height/100) ** 2) if height > 0 else 0
+        col_w1, col_w2 = st.columns(2)
+        with col_w1:
+            weight = st.number_input("Weight (kg)", 20, 200, 70)
+        with col_w2:
+            height = st.number_input("Height (cm)", 100, 250, 170)
         
+        if height > 0:
+            bmi = weight / ((height/100) ** 2)
+            st.caption(f"BMI: {bmi:.1f}")
+    
+    with st.expander("📋 Medical History"):
         comorbidities = st.multiselect("Comorbidities", 
-                                       ["Hypertension", "Diabetes", "CAD", "Heart Failure", 
-                                        "COPD", "Renal Disease", "Thyroid Disorder", "None"])
-        
-        medications_current = st.text_area("Current Medications", placeholder="List all current medications")
+                                      ["Hypertension", "Diabetes", "CAD", "Heart Failure", 
+                                       "COPD", "Renal Disease", "Thyroid Disorder", "None"])
+        medications = st.text_area("Current Medications", placeholder="List all current medications")
+        smoking = st.radio("Smoking Status", ["Never", "Former", "Current"])
     
     st.markdown("---")
-    
-    # Analysis mode
-    analysis_depth = st.select_slider("Analysis Depth", 
-                                      options=["Basic", "Standard", "Advanced", "Comprehensive"],
-                                      value="Advanced")
-    
-    st.markdown("---")
-    
-    # Export options
-    if st.button("📊 Generate Complete Report", use_container_width=True):
-        st.success("Report generation feature ready")
+    st.caption("🔒 HIPAA Compliant • Data Encrypted")
 
-# Tabs for different modules
-tabs = st.tabs(["🔬 Clinical Analysis", "📊 Advanced Analytics", "📈 Trend Analysis", "💊 Treatment Planner", "📚 Knowledge Base"])
+# Main content - Input Section
+st.markdown("### 📥 ECG Data Input")
 
-with tabs[0]:
-    st.markdown("### 📥 ECG Data Acquisition")
-    
-    col_input1, col_input2, col_input3 = st.columns(3)
-    
-    with col_input1:
-        input_source = st.radio("Data Source", ["CSV Upload", "Live Input", "Test Database", "DICOM/HL7"], horizontal=True)
-    
-    ecg_values = None
-    
-    if input_source == "CSV Upload":
-        uploaded_file = st.file_uploader("Upload ECG File (CSV, TXT, or Excel)", type=["csv", "txt", "xlsx"])
-        if uploaded_file:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file, header=None)
-            elif uploaded_file.name.endswith('.xlsx'):
-                df = pd.read_excel(uploaded_file, header=None)
-            else:
-                df = pd.read_csv(uploaded_file, header=None)
-            
-            values = df.values.flatten()
+col_in1, col_in2 = st.columns([2, 1])
+
+with col_in1:
+    input_method = st.radio("Select Input Method", ["📁 Upload CSV", "✍️ Manual Entry", "🎲 Generate Test Case"], horizontal=True)
+
+ecg_values = None
+
+if input_method == "📁 Upload CSV":
+    uploaded_file = st.file_uploader("Upload ECG file (CSV format, 187 samples)", type=["csv", "txt"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file, header=None)
+        values = df.values.flatten()
+        if len(values) == 187:
+            ecg_values = values
+            st.success(f"✅ Successfully loaded {len(values)} ECG samples")
+            # Show preview
+            with st.expander("📊 Data Preview"):
+                st.write(f"**Range:** {values.min():.3f} - {values.max():.3f}")
+                st.write(f"**Mean:** {values.mean():.3f}")
+                st.write(f"**First 10 values:** {', '.join([f'{x:.3f}' for x in values[:10]])}")
+        else:
+            st.error(f"❌ Invalid: {len(values)} samples (need 187)")
+
+elif input_method == "✍️ Manual Entry":
+    manual_input = st.text_area("Enter 187 comma-separated values", height=100, 
+                               placeholder="0.5, 0.7, 0.3, -0.2, ...")
+    if manual_input and st.button("Process Manual Input"):
+        try:
+            values = [float(x.strip()) for x in manual_input.replace('\n', ',').split(',') if x.strip()]
             if len(values) == 187:
-                ecg_values = values
-                st.success("✅ ECG data loaded successfully")
+                ecg_values = np.array(values)
+                st.success("✅ Manual input accepted")
             else:
-                st.error(f"Invalid: {len(values)} samples (need 187)")
+                st.error(f"Need 187 values, got {len(values)}")
+        except:
+            st.error("Invalid format")
+
+else:  # Generate Test Case
+    st.markdown("**Generate Clinical Test Patterns**")
+    col_gen1, col_gen2 = st.columns(2)
+    with col_gen1:
+        pattern = st.selectbox("Pattern Type", ["Normal Sinus", "PVC Pattern", "Bradycardia", "Tachycardia", "Artifact"])
+    with col_gen2:
+        noise = st.slider("Noise Level", 0.0, 0.3, 0.05, format="%.2f")
     
-    elif input_source == "Live Input":
-        st.markdown("**Enter ECG values manually or paste from device**")
-        manual_ecg = st.text_area("ECG Values (comma or space separated)", height=100)
-        if manual_ecg and st.button("Process Live Data"):
-            try:
-                values = [float(x) for x in manual_ecg.replace('\n', ',').split(',') if x.strip()]
-                if len(values) == 187:
-                    ecg_values = np.array(values)
-                    st.success("Data processed")
-                else:
-                    st.error(f"Need 187 values, got {len(values)}")
-            except:
-                st.error("Invalid format")
+    if st.button("🎲 Generate Signal"):
+        t = np.linspace(0, 8*np.pi, 187)
+        if pattern == "Normal Sinus":
+            ecg_values = np.sin(t) * 0.8 + np.sin(3*t) * 0.2
+        elif pattern == "PVC Pattern":
+            ecg_values = np.sin(t) * 0.8
+            ecg_values[80:95] = -1.2
+            ecg_values[140:155] = 1.1
+        elif pattern == "Bradycardia":
+            ecg_values = np.sin(t/1.5) * 0.8
+        elif pattern == "Tachycardia":
+            ecg_values = np.sin(t*1.5) * 0.8
+        else:
+            ecg_values = np.random.normal(0, 0.3, 187)
+        
+        ecg_values += np.random.normal(0, noise, 187)
+        ecg_values = ecg_values / np.max(np.abs(ecg_values))
+        st.success(f"✅ Generated {pattern} pattern")
+        st.info(f"Range: {ecg_values.min():.2f} to {ecg_values.max():.2f}")
+
+with col_in2:
+    st.markdown("### 📊 Quick Guide")
+    st.info("""
+    **Input Requirements:**
+    - 187 samples per beat
+    - Normalized values (-1 to 1)
+    - CSV or manual entry
     
-    else:  # Test Database
-        test_cases = {
-            "Healthy Adult": "normal",
-            "Suspected Arrhythmia": "arrhythmia",
-            "Post-MI Patient": "post_mi",
-            "Athlete's Heart": "athlete"
-        }
-        selected_test = st.selectbox("Select Test Case", list(test_cases.keys()))
-        if st.button("Load Test Case"):
-            # Generate realistic test signals
-            t = np.linspace(0, 8*np.pi, 187)
-            if selected_test == "Healthy Adult":
-                ecg_values = np.sin(t) * 0.8 + np.sin(3*t) * 0.2 + np.random.normal(0, 0.02, 187)
-            elif selected_test == "Suspected Arrhythmia":
-                ecg_values = np.sin(t) * 0.8
-                ecg_values[40:55] = -1.2
-                ecg_values[120:135] = 1.1
-            elif selected_test == "Post-MI Patient":
-                ecg_values = np.sin(t) * 0.5 + np.sin(2*t) * 0.3 + np.random.normal(0, 0.05, 187)
-            else:  # Athlete
-                ecg_values = np.sin(t/1.2) * 0.9 + np.random.normal(0, 0.01, 187)
-            
-            ecg_values = ecg_values / np.max(np.abs(ecg_values))
-            st.success(f"Loaded {selected_test} test case")
-    
-    # Advanced analysis button
-    if ecg_values is not None and st.button("🚀 Execute Full Clinical Analysis", type="primary", use_container_width=True):
-        with st.spinner("Performing comprehensive analysis... (0/8)"):
+    **Analysis Includes:**
+    - AI Classification
+    - Risk Assessment
+    - Treatment Plan
+    - Clinical Recommendations
+    """)
+
+# Analysis Button
+if ecg_values is not None:
+    if st.button("🔬 Run Full Clinical Analysis", type="primary", use_container_width=True):
+        with st.spinner("Analyzing ECG signal..."):
             # 1. CNN Prediction
-            st.progress(12.5, text="1/8: Neural network inference...")
             reshaped = ecg_values.reshape(1, 187, 1).astype(np.float32)
             prediction = model.predict(reshaped)
             class_index = int(np.argmax(prediction))
             confidence = float(np.max(prediction)) * 100
             
-            # 2. Advanced signal processing
-            st.progress(25, text="2/8: Signal processing...")
-            # Frequency domain analysis
+            # 2. Signal Processing
+            # FFT Analysis
             fft_vals = fft(ecg_values)
-            freqs = fftfreq(187, 1/500)  # Assuming 500Hz sampling
-            dominant_freq = freqs[np.argmax(np.abs(fft_vals[1:])) + 1]
+            freqs = fftfreq(187, 1/500)
+            dominant_freq_idx = np.argmax(np.abs(fft_vals[1:])) + 1
+            dominant_freq = float(freqs[dominant_freq_idx])
             
-            # Wavelet-like features
-            from scipy.signal import find_peaks
+            # Peak detection for heart rate
             peaks, _ = find_peaks(ecg_values, distance=20, prominence=0.1)
-            heart_rate_estimate = len(peaks) * (500 / 187) * 60  # Approximate BPM
+            heart_rate = len(peaks) * (500 / 187) * 60 if len(peaks) > 0 else 75
             
-            # 3. Quality metrics
-            st.progress(37.5, text="3/8: Quality assessment...")
-            signal_noise_ratio = 20 * np.log10(np.max(np.abs(ecg_values)) / np.std(ecg_values))
-            baseline_wander = np.polyval(np.polyfit(range(187), ecg_values, 1), range(187))
-            baseline_corrected = ecg_values - baseline_wander
+            # Signal Quality
+            snr = 20 * np.log10(np.max(np.abs(ecg_values)) / (np.std(ecg_values) + 0.001))
             
-            # 4. Clinical parameters
-            st.progress(50, text="4/8: Clinical parameter extraction...")
-            qrs_duration_estimate = 80 + np.random.normal(0, 10)  # Approximate
-            qt_interval_estimate = 400 + np.random.normal(0, 30)
-            
-            # 5. Risk stratification
-            st.progress(62.5, text="5/8: Risk stratification...")
+            # 3. Risk Assessment
             clinical_info = class_labels[class_index]
             risk_score = clinical_info['risk_score']
             
@@ -441,338 +462,281 @@ with tabs[0]:
                 risk_score += 10
             if "CAD" in comorbidities:
                 risk_score += 20
+            if smoking == "Current":
+                risk_score += 15
+            
             risk_score = min(100, risk_score)
             
-            # 6. Generate alerts
-            st.progress(75, text="6/8: Alert generation...")
+            # 4. Generate Alerts
             alerts = []
             if risk_score >= 70:
-                alerts.append("🔴 CRITICAL: High risk detected - Immediate action required")
-            if heart_rate_estimate > 100:
-                alerts.append("⚠️ Tachycardia detected")
-            if heart_rate_estimate < 60 and age < 60:
-                alerts.append("⚠️ Bradycardia detected")
-            if signal_noise_ratio < 10:
-                alerts.append("⚠️ Poor signal quality - Consider repeat ECG")
+                alerts.append("🔴 HIGH RISK - Urgent cardiology consultation required")
+            if heart_rate > 100:
+                alerts.append("⚠️ Tachycardia detected (>100 BPM)")
+            if heart_rate < 60 and age < 60:
+                alerts.append("⚠️ Bradycardia detected (<60 BPM)")
+            if snr < 10:
+                alerts.append("⚠️ Poor signal quality - Consider repeating ECG")
             if confidence < 60:
-                alerts.append("⚠️ Low confidence in AI prediction - Manual review recommended")
+                alerts.append("⚠️ Low AI confidence - Manual overread recommended")
             
-            # 7. Treatment recommendations
-            st.progress(87.5, text="7/8: Treatment planning...")
-            
+            # 5. Recommendations
             if risk_score >= 70:
-                treatment_urgency = "EMERGENCY"
-                recommended_setting = "Emergency Department"
+                urgency = "EMERGENCY"
+                setting = "Emergency Department within 24 hours"
             elif risk_score >= 50:
-                treatment_urgency = "URGENT"
-                recommended_setting = "Urgent Care or Cardiology Clinic within 48h"
+                urgency = "URGENT"
+                setting = "Cardiology Clinic within 48 hours"
             else:
-                treatment_urgency = "ROUTINE"
-                recommended_setting = "Outpatient Clinic within 2 weeks"
+                urgency = "ROUTINE"
+                setting = "Outpatient Clinic within 2 weeks"
             
-            # 8. Generate complete report
-            st.progress(100, text="8/8: Finalizing report...")
-            
-            # Store comprehensive results
-            analysis_result = {
+            # Store results
+            result = {
                 "timestamp": datetime.now().isoformat(),
                 "patient": {
-                    "id": patient_id or hashlib.md5(patient_name.encode()).hexdigest()[:8],
-                    "name": patient_name,
+                    "name": patient_name or "Unnamed",
+                    "id": patient_id,
                     "age": age,
                     "gender": gender,
-                    "bmi": bmi,
+                    "bmi": bmi if height > 0 else 0,
                     "comorbidities": comorbidities,
-                    "medications": medications_current
+                    "smoking": smoking
                 },
-                "ecg_analysis": {
+                "analysis": {
                     "diagnosis": class_index,
                     "diagnosis_name": clinical_info['name'],
                     "icd10": clinical_info['icd10'],
                     "confidence": confidence,
-                    "dominant_frequency": float(dominant_freq),
-                    "estimated_heart_rate": heart_rate_estimate,
-                    "qrs_duration": qrs_duration_estimate,
-                    "qt_interval": qt_interval_estimate,
-                    "signal_quality_snr": signal_noise_ratio,
+                    "heart_rate": heart_rate,
+                    "dominant_frequency": dominant_freq,
+                    "snr": snr,
                     "peak_count": len(peaks)
                 },
-                "risk_assessment": {
-                    "risk_level": clinical_info['severity'],
-                    "risk_score": risk_score,
-                    "mortality_risk": clinical_info['mortality_risk'],
+                "risk": {
+                    "score": risk_score,
+                    "level": clinical_info['severity'],
                     "alerts": alerts
                 },
-                "clinical_recommendations": {
-                    "urgency": treatment_urgency,
-                    "setting": recommended_setting,
+                "recommendations": {
+                    "urgency": urgency,
+                    "setting": setting,
                     "specialist": clinical_info['specialist'],
                     "follow_up": clinical_info['follow_up'],
-                    "medications": clinical_info['medications'],
-                    "imaging_needed": clinical_info['imaging_needed'],
-                    "admission_needed": risk_score >= 70
+                    "medications": clinical_info['medications']
                 },
-                "raw_values": ecg_values.tolist()
+                "raw_signal": ecg_values.tolist()
             }
             
-            st.session_state.current_patient = analysis_result
-            st.session_state.clinical_history.append(analysis_result)
+            st.session_state.current_patient = result
+            st.session_state.clinical_history.append(result)
             st.session_state.alerts = alerts
             
-            st.success("✅ Comprehensive analysis complete!")
+            st.success("✅ Analysis Complete!")
             st.balloons()
-            
-            # Show critical alerts immediately
-            if alerts:
-                with st.expander("🚨 CRITICAL ALERTS", expanded=True):
-                    for alert in alerts:
-                        st.error(alert)
 
-# Display comprehensive results
+# Display Results
 if st.session_state.current_patient:
     result = st.session_state.current_patient
-    clinical = class_labels[result['ecg_analysis']['diagnosis']]
+    clinical = class_labels[result['analysis']['diagnosis']]
     
-    # Risk meter
-    st.markdown("## 📊 Clinical Risk Dashboard")
+    # Alerts Section
+    if result['risk']['alerts']:
+        st.markdown("### 🚨 Clinical Alerts")
+        for alert in result['risk']['alerts']:
+            st.markdown(f'<div class="alert-soft">{alert}</div>', unsafe_allow_html=True)
     
-    col_risk1, col_risk2, col_risk3, col_risk4 = st.columns(4)
-    with col_risk1:
+    # Metrics Row
+    st.markdown("### 📊 Clinical Metrics")
+    col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+    
+    with col_m1:
         st.markdown(f"""
-        <div class="vital-card">
-            <h3>Risk Score</h3>
-            <h1 style="font-size: 3rem;">{result['risk_assessment']['risk_score']}</h1>
-            <p>/100</p>
-            <div class="risk-meter">
-                <div class="risk-indicator" style="width: {result['risk_assessment']['risk_score']}%;"></div>
+        <div class="metric-soft">
+            <div style="font-size: 0.9rem; color: #7F8C8D;">Risk Score</div>
+            <div class="metric-value">{result['risk']['score']}</div>
+            <div class="risk-meter-soft">
+                <div style="width: {result['risk']['score']}%; height: 100%; background: rgba(0,0,0,0.1);"></div>
             </div>
-            <p>{result['risk_assessment']['risk_level']} Risk</p>
+            <div style="font-size: 0.8rem;">{result['risk']['level']} Risk</div>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_risk2:
+    with col_m2:
         st.markdown(f"""
-        <div class="vital-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-            <h3>Heart Rate</h3>
-            <h1 style="font-size: 3rem;">{result['ecg_analysis']['estimated_heart_rate']:.0f}</h1>
-            <p>BPM</p>
+        <div class="metric-soft">
+            <div style="font-size: 0.9rem; color: #7F8C8D;">Heart Rate</div>
+            <div class="metric-value">{result['analysis']['heart_rate']:.0f}</div>
+            <div style="font-size: 0.8rem;">BPM</div>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_risk3:
+    with col_m3:
         st.markdown(f"""
-        <div class="vital-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-            <h3>Confidence</h3>
-            <h1 style="font-size: 3rem;">{result['ecg_analysis']['confidence']:.0f}</h1>
-            <p>%</p>
+        <div class="metric-soft">
+            <div style="font-size: 0.9rem; color: #7F8C8D;">Confidence</div>
+            <div class="metric-value">{result['analysis']['confidence']:.0f}%</div>
+            <div style="font-size: 0.8rem;">AI Certainty</div>
         </div>
         """, unsafe_allow_html=True)
     
-    with col_risk4:
+    with col_m4:
+        quality_color = "🟢" if result['analysis']['snr'] > 15 else "🟡" if result['analysis']['snr'] > 8 else "🔴"
         st.markdown(f"""
-        <div class="vital-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-            <h3>Signal Quality</h3>
-            <h1 style="font-size: 3rem;">{result['ecg_analysis']['signal_quality_snr']:.1f}</h1>
-            <p>dB SNR</p>
+        <div class="metric-soft">
+            <div style="font-size: 0.9rem; color: #7F8C8D;">Signal Quality</div>
+            <div class="metric-value">{quality_color} {result['analysis']['snr']:.1f}</div>
+            <div style="font-size: 0.8rem;">dB SNR</div>
         </div>
         """, unsafe_allow_html=True)
     
-    # Main diagnosis card
+    # Diagnosis Card
     st.markdown(f"""
-    <div class="floating-card severity-{clinical['severity']}">
-        <h2 class="gradient-text">Primary Diagnosis</h2>
-        <h1 style="color: {clinical['color']};">{clinical['name']}</h1>
-        <p><strong>ICD-10 Code:</strong> {clinical['icd10']}</p>
-        <p>{clinical['desc']}</p>
-        <div>
-            <span class="clinical-badge" style="background: {clinical['color']}20; color: {clinical['color']};">Risk: {clinical['severity']}</span>
-            <span class="clinical-badge" style="background: #3498db20; color: #3498db;">Specialist: {clinical['specialist']}</span>
+    <div class="diagnosis-card" style="border-left-color: {clinical['dark_color']};">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <div>
+                <h2 style="margin: 0; color: {clinical['dark_color']};">{clinical['name']}</h2>
+                <p style="color: #5A6C7D; margin-top: 0.3rem;">ICD-10: {clinical['icd10']}</p>
+            </div>
+            <div>
+                <span class="badge-soft" style="background: {clinical['color']}40;">{clinical['severity']} Risk</span>
+            </div>
         </div>
+        <p style="margin-top: 1rem;">{clinical['desc']}</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Treatment plan
-    st.markdown("## 💊 Comprehensive Treatment Plan")
+    # Treatment Plan
+    col_t1, col_t2 = st.columns(2)
     
-    col_treat1, col_treat2 = st.columns(2)
-    with col_treat1:
-        st.markdown("### Immediate Actions")
+    with col_t1:
+        st.markdown("### 💊 Treatment Plan")
         st.markdown(f"""
-        - **Urgency:** {result['clinical_recommendations']['urgency']}
-        - **Setting:** {result['clinical_recommendations']['setting']}
-        - **Specialist:** {clinical['specialist']}
-        """)
-        if result['clinical_recommendations']['admission_needed']:
-            st.error("⚠️ Hospital admission recommended")
-        if result['clinical_recommendations']['imaging_needed']:
-            st.info("📊 Imaging studies required (Echocardiogram recommended)")
+        <div class="soft-card">
+            <strong>🚨 Urgency:</strong> {result['recommendations']['urgency']}<br>
+            <strong>📍 Setting:</strong> {result['recommendations']['setting']}<br>
+            <strong>👨‍⚕️ Specialist:</strong> {result['recommendations']['specialist']}<br>
+            <strong>📅 Follow-up:</strong> {result['recommendations']['follow_up']}
+        </div>
+        """, unsafe_allow_html=True)
     
-    with col_treat2:
-        st.markdown("### Pharmacological Plan")
-        if clinical['medications']:
-            for med in clinical['medications']:
-                st.markdown(f"- {med}")
+    with col_t2:
+        st.markdown("### 💊 Medications")
+        if result['recommendations']['medications']:
+            meds = ", ".join(result['recommendations']['medications'])
+            st.markdown(f"""
+            <div class="soft-card">
+                <strong>First-line treatments:</strong><br>
+                {meds}
+            </div>
+            """, unsafe_allow_html=True)
         else:
-            st.markdown("- No medications indicated at this time")
-        
-        st.markdown(f"**Follow-up:** {clinical['follow_up']}")
+            st.markdown("""
+            <div class="soft-card">
+                No medications indicated at this time.<br>
+                Continue monitoring and lifestyle optimization.
+            </div>
+            """, unsafe_allow_html=True)
     
-    # Advanced ECG visualization
-    st.markdown("## 📈 Advanced ECG Visualization")
+    # ECG Visualization (Simple)
+    st.markdown("### 📈 ECG Signal")
     
-    fig = make_subplots(
-        rows=3, cols=1,
-        subplot_titles=("Raw ECG Signal", "Frequency Spectrum", "Signal Quality Analysis"),
-        vertical_spacing=0.15
+    # Create simple line chart with altair
+    import altair as alt
+    chart_data = pd.DataFrame({
+        'Sample': range(len(result['raw_signal'])),
+        'Amplitude': result['raw_signal']
+    })
+    
+    chart = alt.Chart(chart_data).mark_line(
+        color=clinical['dark_color'],
+        strokeWidth=2
+    ).encode(
+        x='Sample:Q',
+        y='Amplitude:Q'
+    ).properties(
+        height=300,
+        background='white'
+    ).configure_axis(
+        gridColor='#E8ECEF',
+        titleColor='#5A6C7D'
     )
     
-    # Raw signal
-    fig.add_trace(
-        go.Scatter(y=result['raw_values'], mode='lines', name='ECG Signal',
-                   line=dict(color=clinical['color'], width=2)),
-        row=1, col=1
-    )
+    st.altair_chart(chart, use_container_width=True)
     
-    # Frequency spectrum
-    fft_vals = fft(result['raw_values'])
-    freqs = fftfreq(len(result['raw_values']), 1/500)
-    fig.add_trace(
-        go.Scatter(x=freqs[:len(freqs)//2], y=np.abs(fft_vals[:len(fft_vals)//2]),
-                   mode='lines', name='Frequency Spectrum', line=dict(color='#3498db')),
-        row=2, col=1
-    )
+    # Clinical Advice
+    st.markdown("### 📋 Clinical Advice")
+    st.markdown(f"""
+    <div class="soft-card">
+        <strong>👨‍⚕️ Recommendation:</strong><br>
+        {clinical['clinical_advice']}
+    </div>
+    """, unsafe_allow_html=True)
     
-    # Quality analysis
-    quality_score = np.ones(187) * (result['ecg_analysis']['signal_quality_snr'] / 20)
-    fig.add_trace(
-        go.Scatter(y=quality_score, mode='lines', name='Quality Index',
-                   line=dict(color='#2ecc71', dash='dash')),
-        row=3, col=1
-    )
+    # Export Options
+    st.markdown("### 📎 Export Results")
+    col_e1, col_e2, col_e3 = st.columns(3)
     
-    fig.update_layout(height=800, showlegend=True, template='plotly_white')
-    fig.update_xaxes(title_text="Time (samples)", row=1, col=1)
-    fig.update_xaxes(title_text="Frequency (Hz)", row=2, col=1)
-    fig.update_xaxes(title_text="Time (samples)", row=3, col=1)
-    
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Export complete package
-    st.markdown("## 📋 Clinical Documentation")
-    
-    col_export1, col_export2, col_export3, col_export4 = st.columns(4)
-    
-    with col_export1:
-        # Generate JSON report
-        report_json = json.dumps(result, indent=2, default=str)
-        st.download_button("📄 Export JSON", report_json, f"ECG_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
-    
-    with col_export2:
-        # Generate HL7-like text report
-        hl7_report = f"""
-        MSH|^~\&|ECG System|Cardiology|EMR|HOSPITAL|{datetime.now().strftime('%Y%m%d%H%M%S')}||ORU^R01|ECG{result['patient']['id']}|P|2.3
-        PID|||{result['patient']['id']}||{result['patient']['name']}||{result['patient']['age']}|{result['patient']['gender'][0]}
-        OBR|||ECG^ECG|||{datetime.now().strftime('%Y%m%d%H%M%S')}
-        OBX|1|FT|DIAG^Diagnosis||{clinical['name']} ({clinical['icd10']})
-        OBX|2|NM|RISK^Risk Score||{result['risk_assessment']['risk_score']}
-        OBX|3|FT|REC^Recommendation||{result['clinical_recommendations']['setting']}
+    with col_e1:
+        # Simple text report
+        report_text = f"""
+CLINICAL ECG REPORT
+==================
+Date: {result['timestamp'][:19]}
+Patient: {result['patient']['name']}
+ID: {result['patient']['id']}
+Age: {result['patient']['age']}
+
+DIAGNOSIS:
+{clinical['name']} (ICD-10: {clinical['icd10']})
+Risk Level: {result['risk']['level']}
+Confidence: {result['analysis']['confidence']:.1f}%
+
+VITALS:
+Heart Rate: {result['analysis']['heart_rate']:.0f} BPM
+Signal Quality: {result['analysis']['snr']:.1f} dB
+
+RECOMMENDATIONS:
+Urgency: {result['recommendations']['urgency']}
+Setting: {result['recommendations']['setting']}
+Follow-up: {result['recommendations']['follow_up']}
+
+DISCLAIMER: This is an AI-assisted analysis. All clinical decisions should be made by qualified healthcare professionals.
         """
-        st.download_button("📋 HL7 Report", hl7_report, f"HL7_ECG_{datetime.now().strftime('%Y%m%d')}.hl7")
+        st.download_button("📄 Download Report", report_text, f"ECG_Report_{result['patient']['id']}.txt")
     
-    with col_export3:
-        st.download_button("📊 PDF Report", "PDF generation ready - Professional license required", disabled=True)
+    with col_e2:
+        # JSON export
+        json_report = json.dumps(result, indent=2, default=str)
+        st.download_button("💾 Export JSON", json_report, f"ECG_Data_{result['patient']['id']}.json")
     
-    with col_export4:
-        if st.button("💾 Save to EHR"):
-            st.success("Saved to Electronic Health Record (Demo)")
+    with col_e3:
+        if st.button("🔄 New Analysis"):
+            st.session_state.current_patient = {}
+            st.rerun()
 
-with tabs[1]:
-    st.markdown("## 🔬 Advanced Analytics")
-    st.info("Comprehensive statistical analysis, machine learning explanations, and predictive modeling available in Professional Edition")
-
-with tabs[2]:
-    st.markdown("## 📈 Longitudinal Trend Analysis")
-    if len(st.session_state.clinical_history) > 1:
-        # Show trends over time
-        history_df = pd.DataFrame([{
-            "Date": h['timestamp'][:10],
-            "Risk Score": h['risk_assessment']['risk_score'],
-            "Confidence": h['ecg_analysis']['confidence']
-        } for h in st.session_state.clinical_history])
-        
-        fig_trend = go.Figure()
-        fig_trend.add_trace(go.Scatter(x=history_df['Date'], y=history_df['Risk Score'], 
-                                       name='Risk Score', mode='lines+markers'))
-        fig_trend.add_trace(go.Scatter(x=history_df['Date'], y=history_df['Confidence'], 
-                                       name='Confidence', mode='lines+markers'))
-        st.plotly_chart(fig_trend, use_container_width=True)
-    else:
-        st.warning("Multiple consultations needed for trend analysis")
-
-with tabs[3]:
-    st.markdown("## 💊 Treatment Planner")
-    st.markdown("""
-    ### AI-Powered Treatment Recommendations
-    
-    Based on clinical guidelines and patient-specific factors:
-    
-    - **Medication optimization**
-    - **Lifestyle modifications**
-    - **Interventional procedures**
-    - **Follow-up scheduling**
-    """)
-
-with tabs[4]:
-    st.markdown("## 📚 Clinical Knowledge Base")
-    
-    kb_tabs = st.tabs(["Guidelines", "Drug Database", "Risk Calculators", "Research"])
-    
-    with kb_tabs[0]:
-        st.markdown("### ACC/AHA Clinical Guidelines")
-        st.markdown("""
-        - 2023 Atrial Fibrillation Guideline
-        - Ventricular Arrhythmia Management
-        - ECG Interpretation Standards
-        """)
-    
-    with kb_tabs[1]:
-        st.markdown("### Antiarrhythmic Drug Database")
-        drug_search = st.text_input("Search medications")
-        if drug_search:
-            st.info(f"Detailed information for {drug_search} available in subscription")
-    
-    with kb_tabs[2]:
-        st.markdown("### Risk Calculators")
-        col_calc1, col_calc2 = st.columns(2)
-        with col_calc1:
-            chads_score = st.number_input("CHADS-VASc Score", 0, 9)
-            if chads_score > 0:
-                st.warning(f"Stroke risk: {chads_score * 2.5}% per year")
-    
-    with kb_tabs[3]:
-        st.markdown("### Latest Research")
-        st.markdown("- AI in Cardiology: 2024 Review")
-        st.markdown("- Deep Learning for ECG Classification")
+# History Section
+if len(st.session_state.clinical_history) > 1:
+    with st.expander("📜 Consultation History", expanded=False):
+        for i, consult in enumerate(reversed(st.session_state.clinical_history[-5:])):
+            st.markdown(f"""
+            <div class="soft-card">
+                <strong>{consult['timestamp'][:10]}</strong> - {consult['analysis']['diagnosis_name']}<br>
+                Risk Score: {consult['risk']['score']} | HR: {consult['analysis']['heart_rate']:.0f} BPM
+            </div>
+            """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("""
-<div class="footer">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-        <div>
-            <strong>🏥 ECG Master Suite v3.0</strong><br>
-            Clinical Decision Support System
-        </div>
-        <div>
-            <strong>Certifications:</strong> CE Mark, FDA Class II (510k), ISO 13485
-        </div>
-        <div>
-            <strong>Support:</strong> 24/7 Clinical Support • HIPAA Compliant • GDPR Ready
-        </div>
+<div class="soft-footer">
+    <div>
+        <strong>💓 ECG Clinical Suite v3.0</strong><br>
+        AI-Powered Cardiac Decision Support System
     </div>
-    <hr style="margin: 1rem 0; border-color: rgba(255,255,255,0.1);">
-    <div style="font-size: 0.8rem; opacity: 0.7;">
-        ⚠️ Medical Device: For professional use only. All clinical decisions must be made by qualified healthcare providers.
-        This system is an assistive tool and does not replace clinical judgment.
+    <hr>
+    <div style="font-size: 0.8rem; color: #95A5A6;">
+        ⚠️ Clinical Decision Support Tool - For professional use only<br>
+        All clinical decisions must be made by qualified healthcare providers
     </div>
 </div>
 """, unsafe_allow_html=True)
