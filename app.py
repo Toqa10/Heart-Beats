@@ -5,8 +5,6 @@ import tensorflow as tf
 from datetime import datetime
 import json
 import hashlib
-from scipy.fft import fft, fftfreq
-from scipy.signal import find_peaks
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -18,7 +16,7 @@ class_labels = {
     0: {
         "name": "Normal Sinus Rhythm (N)",
         "icd10": "I49.9",
-        "color": "#A8E6CF",  # Soft mint
+        "color": "#A8E6CF",
         "dark_color": "#2Ecc71",
         "severity": "Low",
         "risk_score": 8,
@@ -35,7 +33,7 @@ class_labels = {
     1: {
         "name": "Supraventricular Ectopy (S)",
         "icd10": "I47.1",
-        "color": "#FFD3B6",  # Soft peach
+        "color": "#FFD3B6",
         "dark_color": "#F39C12",
         "severity": "Moderate",
         "risk_score": 42,
@@ -52,7 +50,7 @@ class_labels = {
     2: {
         "name": "Ventricular Ectopy (V)",
         "icd10": "I49.3",
-        "color": "#FFAAA5",  # Soft coral
+        "color": "#FFAAA5",
         "dark_color": "#E74C3C",
         "severity": "High",
         "risk_score": 78,
@@ -69,7 +67,7 @@ class_labels = {
     3: {
         "name": "Fusion Beat (F)",
         "icd10": "I49.8",
-        "color": "#C3B1E1",  # Soft lavender
+        "color": "#C3B1E1",
         "dark_color": "#9B59B6",
         "severity": "Moderate-High",
         "risk_score": 65,
@@ -86,7 +84,7 @@ class_labels = {
     4: {
         "name": "Unclassified Pattern (Q)",
         "icd10": "R94.31",
-        "color": "#D4E0EC",  # Soft blue-gray
+        "color": "#D4E0EC",
         "dark_color": "#95A5A6",
         "severity": "Uncertain",
         "risk_score": 35,
@@ -123,7 +121,6 @@ st.markdown("""
         background: linear-gradient(135deg, #F8F9FA 0%, #E8F0FE 100%);
     }
     
-    /* Soft Header */
     .soft-header {
         background: linear-gradient(135deg, #FFFFFF 0%, #F0F4F8 100%);
         padding: 2rem;
@@ -142,7 +139,6 @@ st.markdown("""
         margin: 0;
     }
     
-    /* Soft Cards */
     .soft-card {
         background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
@@ -160,7 +156,6 @@ st.markdown("""
         background: white;
     }
     
-    /* Metric Cards */
     .metric-soft {
         background: white;
         border-radius: 18px;
@@ -185,7 +180,6 @@ st.markdown("""
         margin: 0.5rem 0;
     }
     
-    /* Risk Meter Soft */
     .risk-meter-soft {
         width: 100%;
         height: 12px;
@@ -195,7 +189,6 @@ st.markdown("""
         margin: 1rem 0;
     }
     
-    /* Diagnosis Card */
     .diagnosis-card {
         background: white;
         border-radius: 20px;
@@ -205,7 +198,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     
-    /* Badges Soft */
     .badge-soft {
         display: inline-block;
         padding: 0.3rem 1rem;
@@ -217,7 +209,6 @@ st.markdown("""
         color: #2C3E50;
     }
     
-    /* Button Styling */
     .stButton > button {
         background: linear-gradient(135deg, #3498DB 0%, #2980B9 100%);
         color: white;
@@ -233,7 +224,6 @@ st.markdown("""
         box-shadow: 0 6px 15px rgba(52,152,219,0.3);
     }
     
-    /* Alert Boxes Soft */
     .alert-soft {
         background: #FFF5F5;
         border-left: 4px solid #FFAAA5;
@@ -242,7 +232,6 @@ st.markdown("""
         margin: 0.5rem 0;
     }
     
-    /* Footer */
     .soft-footer {
         background: white;
         padding: 2rem;
@@ -253,14 +242,12 @@ st.markdown("""
         color: #7F8C8D;
     }
     
-    /* Expander */
     .streamlit-expanderHeader {
         background: rgba(255,255,255,0.7);
         border-radius: 12px;
         font-weight: 500;
     }
     
-    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
         gap: 1rem;
         background: rgba(255,255,255,0.5);
@@ -274,7 +261,6 @@ st.markdown("""
         font-weight: 500;
     }
     
-    /* Progress Bar */
     .stProgress > div > div {
         background: linear-gradient(90deg, #A8E6CF, #3498DB);
     }
@@ -284,6 +270,13 @@ st.markdown("""
         border: none;
         height: 1px;
         background: linear-gradient(90deg, transparent, #CBD5E0, transparent);
+    }
+    
+    .ecg-container {
+        background: white;
+        padding: 1rem;
+        border-radius: 15px;
+        margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -295,6 +288,40 @@ if 'current_patient' not in st.session_state:
     st.session_state.current_patient = {}
 if 'alerts' not in st.session_state:
     st.session_state.alerts = []
+
+# Helper functions (using only numpy)
+def calculate_heart_rate(signal, sampling_rate=500):
+    """Calculate approximate heart rate from peaks"""
+    # Simple peak detection
+    peaks = []
+    for i in range(1, len(signal)-1):
+        if signal[i] > signal[i-1] and signal[i] > signal[i+1] and signal[i] > 0.3:
+            peaks.append(i)
+    
+    if len(peaks) > 1:
+        avg_rr = np.mean(np.diff(peaks)) / sampling_rate
+        heart_rate = 60 / avg_rr
+    else:
+        heart_rate = 75  # Default
+    
+    return heart_rate, len(peaks)
+
+def calculate_snr(signal):
+    """Calculate signal-to-noise ratio"""
+    signal_power = np.max(np.abs(signal))**2
+    noise_power = np.var(signal) if np.var(signal) > 0 else 0.001
+    snr = 10 * np.log10(signal_power / noise_power)
+    return max(0, min(30, snr))
+
+def calculate_dominant_frequency(signal, sampling_rate=500):
+    """Calculate dominant frequency using numpy FFT"""
+    fft_vals = np.fft.fft(signal)
+    freqs = np.fft.fftfreq(len(signal), 1/sampling_rate)
+    magnitude = np.abs(fft_vals)
+    positive_freqs = freqs[:len(freqs)//2]
+    positive_magnitude = magnitude[:len(magnitude)//2]
+    dominant_idx = np.argmax(positive_magnitude[1:]) + 1
+    return float(positive_freqs[dominant_idx])
 
 # Header
 st.markdown("""
@@ -358,10 +385,10 @@ if input_method == "📁 Upload CSV":
         if len(values) == 187:
             ecg_values = values
             st.success(f"✅ Successfully loaded {len(values)} ECG samples")
-            # Show preview
             with st.expander("📊 Data Preview"):
                 st.write(f"**Range:** {values.min():.3f} - {values.max():.3f}")
                 st.write(f"**Mean:** {values.mean():.3f}")
+                st.write(f"**Std Dev:** {values.std():.3f}")
                 st.write(f"**First 10 values:** {', '.join([f'{x:.3f}' for x in values[:10]])}")
         else:
             st.error(f"❌ Invalid: {len(values)} samples (need 187)")
@@ -394,13 +421,14 @@ else:  # Generate Test Case
             ecg_values = np.sin(t) * 0.8 + np.sin(3*t) * 0.2
         elif pattern == "PVC Pattern":
             ecg_values = np.sin(t) * 0.8
+            # Add PVC-like spikes
             ecg_values[80:95] = -1.2
             ecg_values[140:155] = 1.1
         elif pattern == "Bradycardia":
             ecg_values = np.sin(t/1.5) * 0.8
         elif pattern == "Tachycardia":
             ecg_values = np.sin(t*1.5) * 0.8
-        else:
+        else:  # Artifact
             ecg_values = np.random.normal(0, 0.3, 187)
         
         ecg_values += np.random.normal(0, noise, 187)
@@ -433,19 +461,10 @@ if ecg_values is not None:
             class_index = int(np.argmax(prediction))
             confidence = float(np.max(prediction)) * 100
             
-            # 2. Signal Processing
-            # FFT Analysis
-            fft_vals = fft(ecg_values)
-            freqs = fftfreq(187, 1/500)
-            dominant_freq_idx = np.argmax(np.abs(fft_vals[1:])) + 1
-            dominant_freq = float(freqs[dominant_freq_idx])
-            
-            # Peak detection for heart rate
-            peaks, _ = find_peaks(ecg_values, distance=20, prominence=0.1)
-            heart_rate = len(peaks) * (500 / 187) * 60 if len(peaks) > 0 else 75
-            
-            # Signal Quality
-            snr = 20 * np.log10(np.max(np.abs(ecg_values)) / (np.std(ecg_values) + 0.001))
+            # 2. Signal Processing (using numpy only)
+            heart_rate, peak_count = calculate_heart_rate(ecg_values)
+            snr = calculate_snr(ecg_values)
+            dominant_freq = calculate_dominant_frequency(ecg_values)
             
             # 3. Risk Assessment
             clinical_info = class_labels[class_index]
@@ -475,7 +494,7 @@ if ecg_values is not None:
                 alerts.append("⚠️ Tachycardia detected (>100 BPM)")
             if heart_rate < 60 and age < 60:
                 alerts.append("⚠️ Bradycardia detected (<60 BPM)")
-            if snr < 10:
+            if snr < 8:
                 alerts.append("⚠️ Poor signal quality - Consider repeating ECG")
             if confidence < 60:
                 alerts.append("⚠️ Low AI confidence - Manual overread recommended")
@@ -511,7 +530,7 @@ if ecg_values is not None:
                     "heart_rate": heart_rate,
                     "dominant_frequency": dominant_freq,
                     "snr": snr,
-                    "peak_count": len(peaks)
+                    "peak_count": peak_count
                 },
                 "risk": {
                     "score": risk_score,
@@ -581,7 +600,7 @@ if st.session_state.current_patient:
         """, unsafe_allow_html=True)
     
     with col_m4:
-        quality_color = "🟢" if result['analysis']['snr'] > 15 else "🟡" if result['analysis']['snr'] > 8 else "🔴"
+        quality_color = "🟢" if result['analysis']['snr'] > 12 else "🟡" if result['analysis']['snr'] > 6 else "🔴"
         st.markdown(f"""
         <div class="metric-soft">
             <div style="font-size: 0.9rem; color: #7F8C8D;">Signal Quality</div>
@@ -638,31 +657,24 @@ if st.session_state.current_patient:
             </div>
             """, unsafe_allow_html=True)
     
-    # ECG Visualization (Simple)
+    # ECG Visualization (Simple matplotlib style using st.line_chart)
     st.markdown("### 📈 ECG Signal")
     
-    # Create simple line chart with altair
-    import altair as alt
     chart_data = pd.DataFrame({
         'Sample': range(len(result['raw_signal'])),
         'Amplitude': result['raw_signal']
     })
     
-    chart = alt.Chart(chart_data).mark_line(
-        color=clinical['dark_color'],
-        strokeWidth=2
-    ).encode(
-        x='Sample:Q',
-        y='Amplitude:Q'
-    ).properties(
-        height=300,
-        background='white'
-    ).configure_axis(
-        gridColor='#E8ECEF',
-        titleColor='#5A6C7D'
-    )
+    st.line_chart(chart_data.set_index('Sample'), height=300, color=clinical['dark_color'])
     
-    st.altair_chart(chart, use_container_width=True)
+    # Add signal statistics
+    col_stats1, col_stats2, col_stats3 = st.columns(3)
+    with col_stats1:
+        st.caption(f"**Min:** {np.min(result['raw_signal']):.3f}")
+    with col_stats2:
+        st.caption(f"**Max:** {np.max(result['raw_signal']):.3f}")
+    with col_stats3:
+        st.caption(f"**Mean:** {np.mean(result['raw_signal']):.3f}")
     
     # Clinical Advice
     st.markdown("### 📋 Clinical Advice")
@@ -686,6 +698,7 @@ Date: {result['timestamp'][:19]}
 Patient: {result['patient']['name']}
 ID: {result['patient']['id']}
 Age: {result['patient']['age']}
+Gender: {result['patient']['gender']}
 
 DIAGNOSIS:
 {clinical['name']} (ICD-10: {clinical['icd10']})
@@ -695,10 +708,17 @@ Confidence: {result['analysis']['confidence']:.1f}%
 VITALS:
 Heart Rate: {result['analysis']['heart_rate']:.0f} BPM
 Signal Quality: {result['analysis']['snr']:.1f} dB
+Dominant Frequency: {result['analysis']['dominant_frequency']:.2f} Hz
+
+RISK FACTORS:
+Risk Score: {result['risk']['score']}/100
+Comorbidities: {', '.join(result['patient']['comorbidities']) if result['patient']['comorbidities'] else 'None'}
+Smoking: {result['patient']['smoking']}
 
 RECOMMENDATIONS:
 Urgency: {result['recommendations']['urgency']}
 Setting: {result['recommendations']['setting']}
+Specialist: {result['recommendations']['specialist']}
 Follow-up: {result['recommendations']['follow_up']}
 
 DISCLAIMER: This is an AI-assisted analysis. All clinical decisions should be made by qualified healthcare professionals.
